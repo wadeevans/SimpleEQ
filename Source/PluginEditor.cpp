@@ -29,12 +29,24 @@ highCutSlopeSliderAttachment(audioProcessor.apvts, "HighCut Slope", highCutSlope
         addAndMakeVisible(comp);
     }
     
+    const auto& params = audioProcessor.getParameters();
+    for (auto param : params)
+    {
+        param->addListener(this);
+    }
+    
+    startTimerHz(60);
     
     setSize (600, 400);
 }
 
 SimpleEQAudioProcessorEditor::~SimpleEQAudioProcessorEditor()
 {
+    const auto& params = audioProcessor.getParameters();
+    for (auto param : params)
+    {
+        param->removeListener(this);
+    }
 }
 
 //==============================================================================
@@ -60,7 +72,7 @@ void SimpleEQAudioProcessorEditor::paint (juce::Graphics& g)
     mags.resize(w);
     
     for (int i = 0; i < w; ++i) {
-        double mag = 1.0;
+        double mag = 1.f;
         auto freq = mapToLog10(double(i) / double(w), 20.0, 20000.0);
         
         if (!monoChain.isBypassed<ChainPositions::Peak>()) {
@@ -94,30 +106,32 @@ void SimpleEQAudioProcessorEditor::paint (juce::Graphics& g)
         
         mags[i] = Decibels::gainToDecibels(mag);
         
-        Path responseCurve;
         
-        const double outputMin = responseArea.getBottom();
-        const double outputMax = responseArea.getY();
-        auto map = [outputMin, outputMax](double input)
-        {
-            return jmap(input, -24.0, 24.0, outputMin, outputMax);
-        };
-        
-        responseCurve.startNewSubPath(responseArea.getX(), map(mags.front()));
-        
-        for (size_t i = 1; i < mags.size(); ++i)
-        {
-            responseCurve.lineTo(responseArea.getX() + i, map(mags[i]));
-        }
-        
-        g.setColour(Colours::orange);
-        g.drawRoundedRectangle(responseArea.toFloat(), 4.f, 1.f);
-        
-        g.setColour(Colours::white);
-        g.strokePath(responseCurve, PathStrokeType(2.f));
         
         
     }
+    
+    Path responseCurve;
+    
+    const double outputMin = responseArea.getBottom();
+    const double outputMax = responseArea.getY();
+    auto map = [outputMin, outputMax](double input)
+    {
+        return jmap(input, -24.0, 24.0, outputMin, outputMax);
+    };
+    
+    responseCurve.startNewSubPath(responseArea.getX(), map(mags.front()));
+    
+    for (size_t i = 1; i < mags.size(); ++i)
+    {
+        responseCurve.lineTo(responseArea.getX() + i, map(mags[i]));
+    }
+    
+    g.setColour(Colours::orange);
+    g.drawRoundedRectangle(responseArea.toFloat(), 4.f, 1.f);
+    
+    g.setColour(Colours::white);
+    g.strokePath(responseCurve, PathStrokeType(2.f)); 
     
 }
 
@@ -155,7 +169,11 @@ void SimpleEQAudioProcessorEditor::timerCallback()
     if (parametersChanged.compareAndSetBool(false, true))
     {
         // update the monochain
+        auto chainSettings = getChainSettings(audioProcessor.apvts);
+        auto peakCoefficients = makePeakFilter(chainSettings, audioProcessor.getSampleRate());
+        updateCoefficients(monoChain.get<ChainPositions::Peak>().coefficients, peakCoefficients);
         // signal a repaint
+        repaint();
     }
 }
 
