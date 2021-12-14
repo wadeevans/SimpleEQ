@@ -74,41 +74,72 @@ void LookAndFeel::drawToggleButton (juce::Graphics &g,
 {
     using namespace juce;
     
-    Path powerButton;
+    if (auto* bb = dynamic_cast<BypassButton*>(&toggleButton))
+    {
+        Path powerButton;
+            
+            auto bounds = toggleButton.getLocalBounds();
+            
+            // Bounding boxes for hit test
+        //    g.setColour(Colours::red);
+        //    g.drawRect(bounds);
+            
+            auto size = jmin(bounds.getWidth(), bounds.getHeight()) - 6;
+            auto r = bounds.withSizeKeepingCentre(size, size).toFloat();
+            
+            float ang = 30.f;
+            
+            size -= 6;
+            
+            powerButton.addCentredArc(r.getCentreX(),
+                                      r.getCentreY(),
+                                      size * 0.5,
+                                      size * 0.5, 0.f,
+                                      degreesToRadians(ang),
+                                      degreesToRadians(360.f - ang),
+                                      true);
+            
+            powerButton.startNewSubPath(r.getCentreX(), r.getY());
+            powerButton.lineTo(r.getCentre());
+            
+            PathStrokeType pst(2.f, PathStrokeType::JointStyle::curved);
+            
+            auto colour = toggleButton.getToggleState() ? Colours::dimgrey : Colour(0u, 172u, 1u);
+            
+            g.setColour(colour);
+            
+            g.strokePath(powerButton, pst);
+            
+            g.drawEllipse(r, 2.f);
+    }
+    else if (auto* ab = dynamic_cast<AnalyzerButton*>(&toggleButton))
+    {
+        auto colour = !toggleButton.getToggleState() ? Colours::dimgrey : Colour(0u, 172u, 1u);
+        
+        g.setColour(colour);
+        
+        auto bounds = toggleButton.getLocalBounds();
+        g.drawRect(bounds);
+        
+        auto insetRect = bounds.reduced(4);
+        
+        Path randomPath;
+        
+        Random r;
+        
+        randomPath.startNewSubPath(insetRect.getX(), insetRect.getY() + insetRect.getHeight() * r.nextFloat());
+        
+        for ( auto x = insetRect.getX() + 1; x < insetRect.getRight(); x += 2)
+        {
+            randomPath.lineTo(x, insetRect.getY() + insetRect.getHeight() * r.nextFloat());
+        }
+        
+        g.strokePath(randomPath, PathStrokeType(1.f));
+        
+        
+    }
     
-    auto bounds = toggleButton.getLocalBounds();
     
-    // Bounding boxes for hit test
-//    g.setColour(Colours::red);
-//    g.drawRect(bounds);
-    
-    auto size = jmin(bounds.getWidth(), bounds.getHeight()) - 6;
-    auto r = bounds.withSizeKeepingCentre(size, size).toFloat();
-    
-    float ang = 30.f;
-    
-    size -= 6;
-    
-    powerButton.addCentredArc(r.getCentreX(),
-                              r.getCentreY(),
-                              size * 0.5,
-                              size * 0.5, 0.f,
-                              degreesToRadians(ang),
-                              degreesToRadians(360.f - ang),
-                              true);
-    
-    powerButton.startNewSubPath(r.getCentreX(), r.getY());
-    powerButton.lineTo(r.getCentre());
-    
-    PathStrokeType pst(2.f, PathStrokeType::JointStyle::curved);
-    
-    auto colour = toggleButton.getToggleState() ? Colours::dimgrey : Colour(0u, 172u, 1u);
-    
-    g.setColour(colour);
-    
-    g.strokePath(powerButton, pst);
-    
-    g.drawEllipse(r, 2.f);
 }
 
 //==============================================================================
@@ -636,7 +667,7 @@ highCutSlopeSliderAttachment(audioProcessor.apvts, "HighCut Slope", highCutSlope
 lowcutBypassButtonAttachment(audioProcessor.apvts, "LowCut Bypassed", lowcutBypassButton),
 peakBypassButtonAttachment(audioProcessor.apvts, "Peak Bypassed", peakBypassButton),
 highcutBypassButtonAttachment(audioProcessor.apvts, "HighCut Bypassed", highcutBypassButton),
-analyzerEnabledButtonAttachment(audioProcessor.apvts, "LowCut Bypassed", analyzerEnabledButton)
+analyzerEnabledButtonAttachment(audioProcessor.apvts, "Analyzer Enabled", analyzerEnabledButton)
 
 {
     // Make sure that before the constructor has finished, you've set the
@@ -672,6 +703,7 @@ analyzerEnabledButtonAttachment(audioProcessor.apvts, "LowCut Bypassed", analyze
     lowcutBypassButton.setLookAndFeel(&lnf);
     peakBypassButton.setLookAndFeel(&lnf);
     highcutBypassButton.setLookAndFeel(&lnf);
+    analyzerEnabledButton.setLookAndFeel(&lnf);
     
     setSize (600, 480);
 }
@@ -681,6 +713,7 @@ SimpleEQAudioProcessorEditor::~SimpleEQAudioProcessorEditor()
     lowcutBypassButton.setLookAndFeel(nullptr);
     peakBypassButton.setLookAndFeel(nullptr);
     highcutBypassButton.setLookAndFeel(nullptr);
+    analyzerEnabledButton.setLookAndFeel(nullptr);
 }
 
 //==============================================================================
@@ -700,6 +733,16 @@ void SimpleEQAudioProcessorEditor::resized()
     // subcomponents in your editor..
     
     auto bounds = getLocalBounds();
+    
+    auto analyzerEnabledArea = bounds.removeFromTop(25);
+    analyzerEnabledArea.setWidth(100);
+    analyzerEnabledArea.setX(5);
+    analyzerEnabledArea.removeFromTop(2);
+    
+    analyzerEnabledButton.setBounds(analyzerEnabledArea);
+    
+    bounds.removeFromTop(5);
+    
     float hRatio = 25.f / 100.f; //JUCE_LIVE_CONSTANT(33) / 100.f;
     auto responseArea = bounds.removeFromTop(bounds.getHeight() * hRatio);
     
