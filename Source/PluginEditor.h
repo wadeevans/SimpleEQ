@@ -277,7 +277,10 @@ private:
 //==============================================================================
 
 struct BypassButton : juce::ToggleButton { };
-struct AnalyzerButton : juce::ToggleButton { };
+struct AnalyzerButton : juce::ToggleButton
+{
+    
+};
 
 /**
 */

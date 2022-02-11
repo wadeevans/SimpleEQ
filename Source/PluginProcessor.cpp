@@ -117,7 +117,7 @@ void SimpleEQAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
     spec.numChannels = getTotalNumOutputChannels();
     
     osc.prepare(spec);
-    osc.setFrequency(50);
+    osc.setFrequency(100);
 }
 
 void SimpleEQAudioProcessor::releaseResources()
@@ -167,23 +167,23 @@ void SimpleEQAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
     
-
+//    osc.setFrequency(JUCE_LIVE_CONSTANT(100));
     
     updateFilters();
     
 
     juce::dsp::AudioBlock<float> block(buffer);
     
-    // buffer.clear();
+//    buffer.clear();
     
 //    for (int i = 0; i < buffer.getNumSamples(); ++i)
 //    {
 //        buffer.setSample(0, i, osc.processSample(0));
 //    }
     
-    // juce::dsp::ProcessContextReplacing<float> stereoContext(block);
-    
-    // osc.process(stereoContext);
+//     juce::dsp::ProcessContextReplacing<float> stereoContext(block);
+//
+//     osc.process(stereoContext);
     
     auto leftBlock = block.getSingleChannelBlock(0);
     auto rightBlock = block.getSingleChannelBlock(1);
