@@ -315,6 +315,8 @@ private:
     
     juce::dsp::Oscillator<float> osc;
     
+    // A small change
+    
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleEQAudioProcessor)
 };
